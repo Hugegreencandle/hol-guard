@@ -88,7 +88,7 @@ _XAHAU_REVIEW_LISTED = (
     "scaffold_hook",
 )
 # Live JSON-RPC readers that rely on the `other` row (schema caps tools at 80; the server has 87).
-_XAHAU_REVIEW_VIA_OTHER = (
+_XAHAU_INHERIT_VIA_OTHER = (
     "xahau_server_info",
     "get_account_info",
     "get_account_objects",
@@ -218,7 +218,8 @@ def _enabled(key: str, kind: ControlLayerKind) -> _AuthorityStore:
 def _state_cases() -> list[tuple[str, str, str]]:
     return (
         [("xahau", name, "allow") for name in _XAHAU_ALLOW]
-        + [("xahau", name, "review") for name in _XAHAU_REVIEW_LISTED + _XAHAU_REVIEW_VIA_OTHER]
+        + [("xahau", name, "review") for name in _XAHAU_REVIEW_LISTED]
+        + [("xahau", name, "inherit") for name in _XAHAU_INHERIT_VIA_OTHER]
         + [("evernode", name, "allow") for name in _EVERNODE_ALLOW]
         + [("evernode", name, "review") for name in _EVERNODE_REVIEW]
     )
@@ -249,7 +250,7 @@ def test_declared_tools_match_recorded_inventory() -> None:
     assert xahau == {
         **dict.fromkeys(_XAHAU_ALLOW, "allow"),
         **dict.fromkeys(_XAHAU_REVIEW_LISTED, "review"),
-        "other": "review",
+        "other": "inherit",
     }
     evernode = {tool["name"]: tool["state"] for tool in _payload("evernode")["tools"]}
     assert evernode == {
@@ -257,7 +258,7 @@ def test_declared_tools_match_recorded_inventory() -> None:
         **dict.fromkeys(_EVERNODE_REVIEW, "review"),
         "other": "review",
     }
-    assert len(_XAHAU_ALLOW) + len(_XAHAU_REVIEW_LISTED) + len(_XAHAU_REVIEW_VIA_OTHER) == 87
+    assert len(_XAHAU_ALLOW) + len(_XAHAU_REVIEW_LISTED) + len(_XAHAU_INHERIT_VIA_OTHER) == 87
     assert len(_EVERNODE_ALLOW) + len(_EVERNODE_REVIEW) == 12
 
 
@@ -266,9 +267,9 @@ def test_tool_state(key: str, tool_name: str, state: str) -> None:
     assert mcp_tool_state(_payload(key), tool_name) == state
 
 
-@pytest.mark.parametrize("key", sorted(_CASES))
-def test_unknown_tool_falls_to_review(key: str) -> None:
-    assert mcp_tool_state(_payload(key), "tool_added_in_a_future_release") == "review"
+@pytest.mark.parametrize(("key", "state"), [("xahau", "inherit"), ("evernode", "review")])
+def test_unknown_tool_falls_to_other_row(key: str, state: str) -> None:
+    assert mcp_tool_state(_payload(key), "tool_added_in_a_future_release") == state
 
 
 @requires_fresh_projections

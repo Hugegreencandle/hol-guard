@@ -74,14 +74,14 @@
     { "name": "prepare_transaction", "state": "review" },
     { "name": "encode_tx_blob", "state": "review" },
     { "name": "scaffold_hook", "state": "review" },
-    { "name": "other", "state": "review" }
+    { "name": "other", "state": "inherit" }
   ],
   "referenceUrls": [
     "https://github.com/Hugegreencandle/xahau-mcp",
     "https://www.npmjs.com/package/xahau-mcp"
   ],
   "saferAlternatives": [
-    "Unlisted tools fall to the other row (Review). They include every live ledger, governance, amendment, and reward read; use a decode_* or analyze_* tool on data you already have when no live read is needed.",
+    "Unlisted tools fall to the other row (Inherit). They include every live ledger, governance, amendment, and reward read; use a decode_* or analyze_* tool on data you already have when no live read is needed.",
     "Read the unsigned JSON from a build_* tool, prepare_transaction, or encode_tx_blob before signing it offline. The server never signs or submits.",
     "Set XAHAU_RPC_URLS or XAHAU_TEST_RPC_URLS to pin live reads to a JSON-RPC node you trust."
   ]
