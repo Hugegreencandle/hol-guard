@@ -23,7 +23,7 @@ from codex_plugin_scanner.guard.runtime.extension_control_contract import (
     ExtensionControl,
     ExtensionControlLayer,
 )
-from codex_plugin_scanner.guard.runtime.extension_trust import trust_class_for
+from codex_plugin_scanner.guard.runtime.extension_trust import extension_is_active, trust_class_for
 from codex_plugin_scanner.guard.runtime.local_cli_commands import LocalCliCommand
 from codex_plugin_scanner.guard.runtime.local_cli_identity import UnlistedCliIdentity
 from codex_plugin_scanner.guard.runtime.mcp_protection import build_mcp_server_identity
@@ -272,12 +272,21 @@ def test_unknown_tool_falls_to_other_row(key: str, state: str) -> None:
     assert mcp_tool_state(_payload(key), "tool_added_in_a_future_release") == state
 
 
+@pytest.mark.parametrize("key", sorted(_CASES))
+def test_catalog_id_is_external_and_inactive_until_local_admin_enable(key: str) -> None:
+    catalog_id = _CASES[key][1]
+    assert trust_class_for(catalog_id) == "external"
+    assert extension_is_active(catalog_id, None) is False
+    assert extension_is_active(catalog_id, _enabled(key, ControlLayerKind.SIGNED_CLOUD).layers) is False
+    assert extension_is_active(catalog_id, _enabled(key, ControlLayerKind.LOCAL_ADMIN).layers) is True
+
+
 @requires_fresh_projections
 @pytest.mark.parametrize(
     ("key", "tool_name"),
     [
         ("xahau", "build_payment_unsigned"),
-        ("xahau", "get_account_info"),
+        ("xahau", "prepare_transaction"),
         ("evernode", "generate_deploy_commands"),
         ("evernode", "recommend_hosts"),
     ],
@@ -290,6 +299,14 @@ def test_review_applies_only_after_local_admin_enable(key: str, tool_name: str) 
     assert reviewed is not None
     assert reviewed[0] == "review"
     assert reviewed[1] == "catalog-mcp-extension"
+
+
+@requires_fresh_projections
+@pytest.mark.parametrize("current_action", ["allow", "review"])
+def test_inherited_live_read_is_unchanged_after_local_admin_enable(current_action: str) -> None:
+    artifact = _artifact("xahau", "get_account_info")
+    enabled = _enabled("xahau", ControlLayerKind.LOCAL_ADMIN)
+    assert apply_local_mcp_extension_decision(enabled, artifact, current_action) is None
 
 
 @requires_fresh_projections
